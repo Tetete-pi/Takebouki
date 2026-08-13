@@ -1,24 +1,37 @@
 import { resolveAssetUrl } from "../core/assets";
 
 /**
- * BGM プレイヤー。
+ * BGM プレイヤー（Web Audio API 方式）。
  *
- * ガチャ開始ボタンが押されたタイミング（＝ユーザー操作の実行スタック内）で
- * start() を呼ぶことで、音付き再生の許可を得て再生を開始する。ループはしない。
- * ボタンが押されるたびに最初から再生し直す。
+ * BGM を Web Audio で鳴らすことで、演出/排出の <video>（メディア要素）と
+ * 別系統になり、iOS でも動画に割り込まれず同時に鳴らせる。
+ * （<audio> 要素だと、動画再生が始まった瞬間に iOS が音声セッションを奪って
+ *   BGM が止まってしまう＝「一瞬鳴って消える」現象が起きる。）
  *
- * fadeOut() で徐々に音量を下げて停止する（「もう一度引く」時に使用）。
- * volume 変更が効かない環境（iOS Safari 等）では、フェードはかからないが
- * 最終的に停止はする。
+ * ガチャ開始ボタン押下（ユーザー操作の実行スタック内）で start() を呼ぶと、
+ * AudioContext を resume して再生を開始する。ループはしない。押すたびに頭から。
+ * fadeOut() は GainNode で滑らかに音量を下げて停止する。
+ *
+ * Web Audio が使えない環境では <audio> 要素にフォールバックする。
  */
 export class BgmPlayer {
-  private readonly audio: HTMLAudioElement;
+  private readonly url: string;
+
+  // Web Audio 用
+  private ctx: AudioContext | null = null;
+  private buffer: AudioBuffer | null = null;
+  private source: AudioBufferSourceNode | null = null;
+  private gain: GainNode | null = null;
+  private wantPlay = false;
+
+  // フォールバック用（<audio>）
+  private audioEl: HTMLAudioElement | null = null;
   private fadeId = 0;
 
   constructor(src: string) {
-    // iOS でプログラム再生する音声（BGM）を、動画と同様に鳴らすための設定。
-    // audioSession.type を "playback" にすると、消音スイッチや音声セッションの
-    // 都合で <audio> が鳴らない問題を回避できる（iOS Safari 16.4+。未対応環境では無害）。
+    this.url = resolveAssetUrl(src);
+
+    // iOS の音声セッションを「再生」に（対応環境のみ・無害）
     try {
       const audioSession = (navigator as unknown as {
         audioSession?: { type: string };
@@ -28,61 +41,181 @@ export class BgmPlayer {
       /* 未対応環境は無視 */
     }
 
-    this.audio = new Audio();
-    this.audio.src = resolveAssetUrl(src);
-    this.audio.loop = false; // ループしない
-    this.audio.preload = "auto";
-    this.audio.setAttribute("playsinline", "");
-    // iOS では DOM に存在する要素の方が確実に再生できるため追加しておく。
-    // controls を付けないので画面には表示されない（display:none は iOS で再生を
-    // 妨げることがあるため使わない）。
-    document.body.appendChild(this.audio);
-    this.audio.load();
+    const Ctor =
+      (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext })
+        .AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+
+    if (Ctor) {
+      try {
+        this.ctx = new Ctor();
+        void this.loadBuffer();
+      } catch {
+        this.ctx = null;
+      }
+    }
+    if (!this.ctx) this.initFallback();
   }
 
-  /** 最初から再生を開始する（ユーザー操作起点で呼ぶこと）。 */
+  /** BGM を最初から再生開始する（ユーザー操作起点で呼ぶこと）。 */
   start(): void {
     this.cancelFade();
-    this.setVolume(1);
-    try {
-      this.audio.currentTime = 0;
-    } catch {
-      /* まだ読み込めていない場合は無視 */
+
+    if (this.ctx) {
+      if (this.ctx.state === "suspended") void this.ctx.resume();
+      if (this.buffer) {
+        this.playNow();
+      } else {
+        this.wantPlay = true; // デコード完了時に再生する
+      }
+      return;
     }
-    // 音付き再生が拒否された場合は握りつぶす（BGM は必須ではないため）
-    void this.audio.play().catch(() => {});
+
+    // フォールバック（<audio>）
+    if (this.audioEl) {
+      this.setElVolume(1);
+      try {
+        this.audioEl.currentTime = 0;
+      } catch {
+        /* noop */
+      }
+      void this.audioEl.play().catch(() => {});
+    }
   }
 
-  /** 徐々に音量を下げて停止する。 */
+  /** GainNode（または volume）で徐々に音量を下げて停止する。 */
   fadeOut(durationMs = 800): void {
     this.cancelFade();
-    if (this.audio.paused) return; // 再生していなければ何もしない
-    const steps = 24;
-    const stepMs = Math.max(16, durationMs / steps);
-    const startVol = this.getVolume();
-    let i = 0;
-    this.fadeId = window.setInterval(() => {
-      i += 1;
-      this.setVolume(Math.max(0, startVol * (1 - i / steps)));
-      if (i >= steps) this.finishStop();
-    }, stepMs);
+
+    if (this.ctx && this.source && this.gain) {
+      const now = this.ctx.currentTime;
+      const end = now + Math.max(0.05, durationMs / 1000);
+      try {
+        this.gain.gain.cancelScheduledValues(now);
+        this.gain.gain.setValueAtTime(this.gain.gain.value, now);
+        this.gain.gain.linearRampToValueAtTime(0.0001, end);
+      } catch {
+        /* noop */
+      }
+      const src = this.source;
+      try {
+        src.stop(end + 0.02);
+      } catch {
+        /* noop */
+      }
+      // 参照を手放す（次回再生は新しい source を作る）
+      this.source = null;
+      this.gain = null;
+      this.wantPlay = false;
+      return;
+    }
+
+    // フォールバック（<audio> の volume フェード）
+    const el = this.audioEl;
+    if (el && !el.paused) {
+      const steps = 24;
+      const stepMs = Math.max(16, durationMs / steps);
+      const startVol = this.getElVolume();
+      let i = 0;
+      this.fadeId = window.setInterval(() => {
+        i += 1;
+        this.setElVolume(Math.max(0, startVol * (1 - i / steps)));
+        if (i >= steps) this.stopFallback();
+      }, stepMs);
+    }
+    this.wantPlay = false;
   }
 
   /** 即時停止する。 */
   stop(): void {
     this.cancelFade();
-    this.finishStop();
+    this.wantPlay = false;
+    this.stopSource();
+    this.stopFallback();
   }
 
-  private finishStop(): void {
-    this.cancelFade();
-    this.audio.pause();
+  // ---- Web Audio 内部 ------------------------------------------------------
+
+  private async loadBuffer(): Promise<void> {
+    if (!this.ctx) return;
     try {
-      this.audio.currentTime = 0;
+      const res = await fetch(this.url);
+      const arr = await res.arrayBuffer();
+      this.buffer = await this.ctx.decodeAudioData(arr);
+      if (this.wantPlay) this.playNow();
+    } catch {
+      // 取得/デコード失敗時は <audio> にフォールバック
+      this.ctx = null;
+      this.initFallback();
+      if (this.wantPlay) this.start();
+    }
+  }
+
+  private playNow(): void {
+    if (!this.ctx || !this.buffer) return;
+    this.wantPlay = false;
+    this.stopSource();
+
+    const source = this.ctx.createBufferSource();
+    source.buffer = this.buffer;
+    source.loop = false;
+    const gain = this.ctx.createGain();
+    gain.gain.value = 1;
+    source.connect(gain).connect(this.ctx.destination);
+    source.start(0);
+
+    this.source = source;
+    this.gain = gain;
+  }
+
+  private stopSource(): void {
+    if (this.source) {
+      try {
+        this.source.stop();
+      } catch {
+        /* noop */
+      }
+      try {
+        this.source.disconnect();
+      } catch {
+        /* noop */
+      }
+      this.source = null;
+    }
+    if (this.gain) {
+      try {
+        this.gain.disconnect();
+      } catch {
+        /* noop */
+      }
+      this.gain = null;
+    }
+  }
+
+  // ---- フォールバック（<audio>） -------------------------------------------
+
+  private initFallback(): void {
+    if (this.audioEl) return;
+    const el = new Audio();
+    el.src = this.url;
+    el.loop = false;
+    el.preload = "auto";
+    el.setAttribute("playsinline", "");
+    document.body.appendChild(el);
+    el.load();
+    this.audioEl = el;
+  }
+
+  private stopFallback(): void {
+    this.cancelFade();
+    if (!this.audioEl) return;
+    this.audioEl.pause();
+    try {
+      this.audioEl.currentTime = 0;
     } catch {
       /* noop */
     }
-    this.setVolume(1); // 次回再生のために戻す
+    this.setElVolume(1);
   }
 
   private cancelFade(): void {
@@ -92,17 +225,17 @@ export class BgmPlayer {
     }
   }
 
-  private getVolume(): number {
+  private getElVolume(): number {
     try {
-      return this.audio.volume;
+      return this.audioEl ? this.audioEl.volume : 1;
     } catch {
       return 1;
     }
   }
 
-  private setVolume(v: number): void {
+  private setElVolume(v: number): void {
     try {
-      this.audio.volume = v;
+      if (this.audioEl) this.audioEl.volume = v;
     } catch {
       /* iOS 等 volume 変更不可の環境では無視 */
     }
