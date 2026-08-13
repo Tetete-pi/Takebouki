@@ -11,6 +11,10 @@
 
 import { resolveAssetUrl } from "../core/assets";
 
+/** プレースホルダ描画が想定する canvas バッファの基準サイズ（9:16）。 */
+const BASE_CANVAS_W = 720;
+const BASE_CANVAS_H = 1280;
+
 export interface ClipOptions {
   /** 動画ファイルのURL（存在しなければプレースホルダにフォールバック） */
   src: string;
@@ -51,8 +55,8 @@ export class VideoStage {
 
     this.canvas = document.createElement("canvas");
     this.canvas.className = "stage__canvas";
-    this.canvas.width = 720;
-    this.canvas.height = 1280;
+    this.canvas.width = BASE_CANVAS_W;
+    this.canvas.height = BASE_CANVAS_H;
 
     this.badge = document.createElement("div");
     this.badge.className = "stage__badge";
@@ -130,6 +134,16 @@ export class VideoStage {
   /** 現在再生中（＝最終フレーム）の映像を canvas に焼き付けて残す。 */
   private freezeCurrentFrame(): void {
     const video = this.videos[this.front];
+    // ライブ映像（ステージへの object-fit: cover）と表示を一致させるため、
+    // canvas バッファをステージの実ピクセルサイズに合わせる。こうすると canvas 要素は
+    // 等倍表示（追加の cover トリミングなし）になり、二重トリミングを防げる。
+    const rect = this.element.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(1, Math.round((rect.width || BASE_CANVAS_W) * dpr));
+    const h = Math.max(1, Math.round((rect.height || BASE_CANVAS_H) * dpr));
+    this.canvas.width = w;
+    this.canvas.height = h;
+
     const ctx = this.canvas.getContext("2d");
     if (ctx) {
       if (video.videoWidth > 0 && video.videoHeight > 0) {
@@ -168,6 +182,11 @@ export class VideoStage {
     this.resolveCurrent = null;
     this.skipButton.hidden = true;
     this.showBadge(false);
+    // 焼き付けでステージ実寸に変えた canvas を、プレースホルダ描画用の基準サイズへ戻す
+    if (this.canvas.width !== BASE_CANVAS_W || this.canvas.height !== BASE_CANVAS_H) {
+      this.canvas.width = BASE_CANVAS_W;
+      this.canvas.height = BASE_CANVAS_H;
+    }
     for (const v of this.videos) {
       v.classList.remove("is-active");
       v.onended = null;
