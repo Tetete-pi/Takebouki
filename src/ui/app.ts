@@ -78,11 +78,6 @@ export class GachaApp {
     const root = document.createElement("div");
     root.className = "app";
 
-    const header = document.createElement("header");
-    header.className = "app__header";
-    header.innerHTML = `<h1 class="app__title">${this.manifest.title}</h1>
-      <p class="app__subtitle">単発ガチャ</p>`;
-
     this.completionEl.className = "completion";
 
     // 「引く」ボタンは待機画面としてステージ中央にオーバーレイ表示する。
@@ -97,7 +92,7 @@ export class GachaApp {
     // コンプリート表示はステージ右上に常時表示（結果表示の上にも出るよう最後に追加）
     stageWrap.append(this.stage.element, controls, this.resultView.element, this.completionEl);
 
-    root.append(header, stageWrap, this.stats.element);
+    root.append(stageWrap, this.stats.element);
     return root;
   }
 

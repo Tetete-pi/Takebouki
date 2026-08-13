@@ -39,14 +39,14 @@ export const manifest: GachaManifest = {
   ],
 
   // ラインナップ（= 排出動画の本数分だけ定義する）
-  // レア度は暫定。weight が大きいほど出やすい。
+  // 現在は全アイテムの確率を均等（weight 同値）に設定。レア度はそのまま。
   // ※ 竹とんぼ・武井壮の排出動画は暫定的に takebouki.mp4 を使用中（後日差し替え）。
   items: [
-    { id: "takebouki", name: "竹ボウキ", rarityId: "n", weight: 500, dropVideo: "takebouki.mp4" },
-    { id: "taketombo", name: "竹とんぼ", rarityId: "n", weight: 500, dropVideo: "takebouki.mp4" },
-    { id: "takenoko", name: "タケノコ", rarityId: "r", weight: 150, dropVideo: "takenoko.mp4" },
-    { id: "takecopter", name: "タケコプター", rarityId: "sr", weight: 45, dropVideo: "takecopter.mp4" },
-    { id: "takeishou", name: "武井壮", rarityId: "ssr", weight: 10, dropVideo: "takebouki.mp4" },
+    { id: "takebouki", name: "竹ボウキ", rarityId: "n", weight: 100, dropVideo: "takebouki.mp4" },
+    { id: "taketombo", name: "竹とんぼ", rarityId: "n", weight: 100, dropVideo: "takebouki.mp4" },
+    { id: "takenoko", name: "タケノコ", rarityId: "r", weight: 100, dropVideo: "takenoko.mp4" },
+    { id: "takecopter", name: "タケコプター", rarityId: "sr", weight: 100, dropVideo: "takecopter.mp4" },
+    { id: "takeishou", name: "武井壮", rarityId: "ssr", weight: 100, dropVideo: "takebouki.mp4" },
   ],
 
   // 実mp4が無いときのプレースホルダ演出の尺（秒）

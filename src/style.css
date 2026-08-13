@@ -43,13 +43,6 @@ body {
   padding: 20px 16px 48px;
 }
 
-/* ---- header ------------------------------------------------------------- */
-.app__header {
-  position: relative;
-  text-align: center;
-  margin-bottom: 16px;
-}
-
 /* コンプリート表示: ステージ右上のHUDピル（同一セッション内で入手した種類数 / 全種類数） */
 .completion {
   position: absolute;
@@ -91,22 +84,6 @@ body {
   color: #ffcc33;
   text-shadow: 0 0 12px rgba(255, 204, 51, 0.6);
 }
-.app__title {
-  margin: 0;
-  font-size: 26px;
-  letter-spacing: 0.06em;
-  background: linear-gradient(90deg, #ffd76b, #ff9bd0, #7cc4ff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.app__subtitle {
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-  letter-spacing: 0.2em;
-}
-
 /* ---- stage -------------------------------------------------------------- */
 .app__stage {
   position: relative;
