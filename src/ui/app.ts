@@ -105,6 +105,8 @@ export class GachaApp {
 
   private toIdle(): void {
     this.phase = "idle";
+    // 「もう一度引く」等で待機に戻るときは BGM をフェードアウトして止める。
+    this.bgm?.fadeOut();
     this.resultView.hide();
     this.stage.reset();
     this.pullAction.setEnabled(true);
