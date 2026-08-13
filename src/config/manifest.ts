@@ -40,10 +40,10 @@ export const manifest: GachaManifest = {
 
   // ラインナップ（= 排出動画の本数分だけ定義する）
   // 現在は全アイテムの確率を均等（weight 同値）に設定。レア度はそのまま。
-  // ※ 竹とんぼの排出動画は暫定的に takebouki.mp4 を使用中（後日差し替え）。
+  // 排出動画は全アイテムとも専用のものを配置済み。
   items: [
     { id: "takebouki", name: "竹ボウキ", rarityId: "n", weight: 100, dropVideo: "takebouki.mp4" },
-    { id: "taketombo", name: "竹とんぼ", rarityId: "n", weight: 100, dropVideo: "takebouki.mp4" },
+    { id: "taketombo", name: "松田慎二", rarityId: "n", weight: 100, dropVideo: "taketombo.mp4" },
     { id: "takenoko", name: "タケノコ", rarityId: "r", weight: 100, dropVideo: "takenoko.mp4" },
     { id: "takecopter", name: "タケコプター", rarityId: "sr", weight: 100, dropVideo: "takecopter.mp4" },
     { id: "takeishou", name: "武井壮", rarityId: "ssr", weight: 100, dropVideo: "takeishou.mp4" },
