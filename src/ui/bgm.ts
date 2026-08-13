@@ -16,10 +16,27 @@ export class BgmPlayer {
   private fadeId = 0;
 
   constructor(src: string) {
+    // iOS でプログラム再生する音声（BGM）を、動画と同様に鳴らすための設定。
+    // audioSession.type を "playback" にすると、消音スイッチや音声セッションの
+    // 都合で <audio> が鳴らない問題を回避できる（iOS Safari 16.4+。未対応環境では無害）。
+    try {
+      const audioSession = (navigator as unknown as {
+        audioSession?: { type: string };
+      }).audioSession;
+      if (audioSession) audioSession.type = "playback";
+    } catch {
+      /* 未対応環境は無視 */
+    }
+
     this.audio = new Audio();
     this.audio.src = resolveAssetUrl(src);
     this.audio.loop = false; // ループしない
     this.audio.preload = "auto";
+    this.audio.setAttribute("playsinline", "");
+    // iOS では DOM に存在する要素の方が確実に再生できるため追加しておく。
+    // controls を付けないので画面には表示されない（display:none は iOS で再生を
+    // 妨げることがあるため使わない）。
+    document.body.appendChild(this.audio);
     this.audio.load();
   }
 
