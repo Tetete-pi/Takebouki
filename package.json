@@ -1,0 +1,16 @@
+{
+  "name": "takebouki-gacha-simulator",
+  "version": "0.1.0",
+  "description": "ブラウザで動く単発ガチャシミュレーター（演出動画 → 排出動画）",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vite": "^6.0.7"
+  }
+}

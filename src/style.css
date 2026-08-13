@@ -1,0 +1,324 @@
+:root {
+  --bg: #070910;
+  --panel: #10131f;
+  --panel-2: #161b2b;
+  --text: #eef1f7;
+  --muted: #9aa4b2;
+  --accent: #4aa3ff;
+  --stage-w: 360px;
+  --stage-h: 640px;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* hidden 属性を確実に効かせる（display:flex 等の指定に負けないように） */
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #1a2338 0%, transparent 60%),
+    var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", Meiryo, sans-serif;
+  display: flex;
+  justify-content: center;
+}
+
+#app {
+  width: 100%;
+  max-width: 480px;
+  padding: 20px 16px 48px;
+}
+
+/* ---- header ------------------------------------------------------------- */
+.app__header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+.app__title {
+  margin: 0;
+  font-size: 26px;
+  letter-spacing: 0.06em;
+  background: linear-gradient(90deg, #ffd76b, #ff9bd0, #7cc4ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.app__subtitle {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.2em;
+}
+
+/* ---- stage -------------------------------------------------------------- */
+.app__stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  max-height: 68vh;
+  margin: 0 auto;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #05070d;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 20px 60px rgba(0, 0, 0, 0.55);
+}
+
+.stage,
+.stage__video,
+.stage__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.stage__video,
+.stage__canvas {
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.stage__video.is-active,
+.stage__canvas.is-active {
+  opacity: 1;
+}
+
+.stage__skip {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 3;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+}
+.stage__skip:hover {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.stage__badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 3;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #0b0e17;
+  background: var(--accent, #fff);
+  box-shadow: 0 0 20px var(--accent, #fff);
+}
+
+/* ---- result overlay ----------------------------------------------------- */
+.result {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+  background: radial-gradient(
+    circle at 50% 40%,
+    rgba(0, 0, 0, 0.35),
+    rgba(0, 0, 0, 0.82)
+  );
+}
+.result.is-in .result__rarity {
+  animation: pop 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.result.is-in .result__name {
+  animation: fadeup 0.5s ease 0.12s both;
+}
+.result__rarity {
+  font-size: 44px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: var(--accent, #fff);
+  text-shadow: 0 0 24px var(--accent, #fff);
+}
+.result__name {
+  font-size: 24px;
+  font-weight: 700;
+}
+.result__staging {
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+.result__staging[data-staging="hit"] {
+  color: #ffcc33;
+}
+.result__again {
+  margin-top: 8px;
+  padding: 12px 26px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff, #d6def0);
+  color: #10131f;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.result__again:hover {
+  filter: brightness(1.05);
+}
+
+/* ---- controls (pull action) -------------------------------------------- */
+.app__controls {
+  display: flex;
+  justify-content: center;
+  margin-top: 22px;
+}
+.pull-button {
+  position: relative;
+  padding: 16px 44px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #10131f;
+  cursor: pointer;
+  background: linear-gradient(180deg, #ffe07a, #ff9f43);
+  box-shadow:
+    0 8px 24px rgba(255, 159, 67, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: transform 0.08s ease, filter 0.2s ease;
+}
+.pull-button:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+.pull-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.pull-button:disabled {
+  cursor: default;
+  filter: grayscale(0.6) brightness(0.7);
+  box-shadow: none;
+}
+
+/* ---- stats -------------------------------------------------------------- */
+.stats {
+  margin-top: 28px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.stats__heading {
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+.stats__table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stats__row {
+  display: grid;
+  grid-template-columns: 56px 40px 60px 1fr;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.stats__badge {
+  text-align: center;
+  padding: 2px 0;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 12px;
+  color: #0b0e17;
+  background: var(--accent, #fff);
+}
+.stats__count {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.stats__pct {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  font-weight: 700;
+}
+.stats__theory {
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
+}
+
+/* ---- config error ------------------------------------------------------- */
+.app--error {
+  padding-top: 40px;
+}
+.config-error {
+  background: #2a1320;
+  border: 1px solid #5c2740;
+  border-radius: 12px;
+  padding: 20px;
+}
+.config-error h1 {
+  margin-top: 0;
+  color: #ff8fb0;
+}
+.config-error ul {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.7;
+}
+
+/* ---- animations --------------------------------------------------------- */
+@keyframes pop {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes fadeup {
+  0% {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result.is-in .result__rarity,
+  .result.is-in .result__name {
+    animation: none;
+  }
+}

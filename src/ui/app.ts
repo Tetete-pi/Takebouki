@@ -1,0 +1,156 @@
+import type { DrawResult, GachaManifest } from "../types";
+import { drawOnce, validateManifest } from "../core/gacha";
+import { defaultRng, type Rng } from "../core/rng";
+import { createButtonPullAction, type PullAction } from "./pullAction";
+import { VideoStage } from "./videoStage";
+import { createResultView } from "./resultView";
+import { createStatsPanel } from "./statsPanel";
+
+/** 画面フローの状態。 */
+type Phase = "idle" | "staging" | "dropping" | "result";
+
+export interface AppOptions {
+  manifest: GachaManifest;
+  rng?: Rng;
+  /** 引くアクションの差し替え用（未指定ならボタン） */
+  pullActionFactory?: () => PullAction;
+}
+
+/**
+ * アプリ全体のオーケストレーション。
+ *
+ * フロー: idle →(引く)→ staging(演出) →(終了)→ dropping(排出) →(終了)→ result →(もう一度)→ idle
+ */
+export class GachaApp {
+  readonly element: HTMLElement;
+
+  private readonly manifest: GachaManifest;
+  private readonly rng: Rng;
+  private readonly stage: VideoStage;
+  private readonly pullAction: PullAction;
+  private readonly resultView = createResultView();
+  private readonly stats = createStatsPanel();
+
+  private phase: Phase = "idle";
+
+  constructor(options: AppOptions) {
+    this.manifest = options.manifest;
+    this.rng = options.rng ?? defaultRng;
+
+    const errors = validateManifest(this.manifest);
+    if (errors.length > 0) {
+      this.element = renderConfigErrors(errors);
+      // 以降のフィールドはダミー初期化（この分岐では使わない）
+      this.stage = new VideoStage();
+      this.pullAction = createButtonPullAction();
+      return;
+    }
+
+    this.stage = new VideoStage();
+    this.pullAction = (options.pullActionFactory ?? (() => createButtonPullAction()))();
+
+    this.element = this.render();
+
+    this.pullAction.onPull(() => void this.runPull());
+    this.resultView.onAgain(() => this.toIdle());
+
+    this.stats.init(this.manifest);
+    this.toIdle();
+  }
+
+  // ---- レンダリング --------------------------------------------------------
+
+  private render(): HTMLElement {
+    const root = document.createElement("div");
+    root.className = "app";
+
+    const header = document.createElement("header");
+    header.className = "app__header";
+    header.innerHTML = `<h1 class="app__title">${this.manifest.title}</h1>
+      <p class="app__subtitle">単発ガチャ</p>`;
+
+    const stageWrap = document.createElement("div");
+    stageWrap.className = "app__stage";
+    stageWrap.append(this.stage.element, this.resultView.element);
+
+    const controls = document.createElement("div");
+    controls.className = "app__controls";
+    controls.append(this.pullAction.element);
+
+    root.append(header, stageWrap, controls, this.stats.element);
+    return root;
+  }
+
+  // ---- フロー --------------------------------------------------------------
+
+  private toIdle(): void {
+    this.phase = "idle";
+    this.resultView.hide();
+    this.stage.reset();
+    this.pullAction.setEnabled(true);
+  }
+
+  private async runPull(): Promise<void> {
+    if (this.phase !== "idle") return;
+    this.pullAction.setEnabled(false);
+    this.resultView.hide();
+
+    const result = drawOnce(this.manifest, this.rng);
+
+    await this.playStaging(result);
+    await this.playDrop(result);
+
+    this.showResult(result);
+  }
+
+  private playStaging(result: DrawResult): Promise<void> {
+    this.phase = "staging";
+    const isHit = result.staging === "hit";
+    const file = isHit ? this.manifest.staging.hit : this.manifest.staging.normal;
+    return this.stage.play({
+      src: `${this.manifest.videoBasePath}/staging/${file}`,
+      label: isHit ? "★ CHANCE ★" : "GACHA",
+      accent: isHit ? "#ffcc33" : "#4aa3ff",
+      placeholderDuration: this.manifest.placeholderDurations.staging,
+      caption: isHit ? "当たり演出" : "通常演出",
+    });
+  }
+
+  private playDrop(result: DrawResult): Promise<void> {
+    this.phase = "dropping";
+    return this.stage.play({
+      src: `${this.manifest.videoBasePath}/drops/${result.item.dropVideo}`,
+      label: result.rarity.label,
+      accent: result.rarity.color,
+      placeholderDuration: this.manifest.placeholderDurations.drop,
+      caption: result.item.name,
+    });
+  }
+
+  private showResult(result: DrawResult): void {
+    this.phase = "result";
+    this.stage.showResultBadge(result.rarity.label, result.rarity.color);
+    this.resultView.show(result);
+    this.stats.record(result);
+  }
+}
+
+function renderConfigErrors(errors: string[]): HTMLElement {
+  const root = document.createElement("div");
+  root.className = "app app--error";
+  const list = errors.map((e) => `<li>${escapeHtml(e)}</li>`).join("");
+  root.innerHTML = `
+    <div class="config-error">
+      <h1>設定エラー</h1>
+      <p>manifest.ts の設定を確認してください。</p>
+      <ul>${list}</ul>
+    </div>`;
+  return root;
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
