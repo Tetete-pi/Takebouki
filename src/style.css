@@ -135,6 +135,10 @@ body {
 .stage__canvas {
   object-fit: cover;
   opacity: 0;
+}
+/* 動画同士の切り替えは瞬時（暗転なし）にするためトランジションなし。
+   canvas（カバー/プレースホルダ）のみ軽くフェードさせる。 */
+.stage__canvas {
   transition: opacity 0.2s ease;
 }
 .stage__video.is-active,

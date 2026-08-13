@@ -2,7 +2,7 @@ import type { DrawResult, GachaManifest } from "../types";
 import { drawOnce, validateManifest } from "../core/gacha";
 import { defaultRng, type Rng } from "../core/rng";
 import { createButtonPullAction, type PullAction } from "./pullAction";
-import { VideoStage } from "./videoStage";
+import { VideoStage, type ClipOptions } from "./videoStage";
 import { createResultView } from "./resultView";
 import { createStatsPanel } from "./statsPanel";
 import { BgmPlayer } from "./bgm";
@@ -123,34 +123,39 @@ export class GachaApp {
 
     const result = drawOnce(this.manifest, this.rng);
 
-    await this.playStaging(result);
-    await this.playDrop(result);
+    // 演出 → 排出 をシームレスに連続再生（暗転なし・瞬時切り替え）
+    await this.stage.playSequence(
+      [this.stagingClip(result), this.dropClip(result)],
+      (index) => {
+        this.phase = index === 0 ? "staging" : "dropping";
+      },
+    );
 
     this.showResult(result);
   }
 
-  private playStaging(result: DrawResult): Promise<void> {
-    this.phase = "staging";
+  /** 演出クリップ（通常/当たり）の設定を組み立てる。 */
+  private stagingClip(result: DrawResult): ClipOptions {
     const isHit = result.staging === "hit";
     const file = isHit ? this.manifest.staging.hit : this.manifest.staging.normal;
-    return this.stage.play({
+    return {
       src: `${this.manifest.videoBasePath}/staging/${file}`,
       label: isHit ? "★ CHANCE ★" : "GACHA",
       accent: isHit ? "#ffcc33" : "#4aa3ff",
       placeholderDuration: this.manifest.placeholderDurations.staging,
       caption: isHit ? "当たり演出" : "通常演出",
-    });
+    };
   }
 
-  private playDrop(result: DrawResult): Promise<void> {
-    this.phase = "dropping";
-    return this.stage.play({
+  /** 排出クリップ（アイテム別）の設定を組み立てる。 */
+  private dropClip(result: DrawResult): ClipOptions {
+    return {
       src: `${this.manifest.videoBasePath}/drops/${result.item.dropVideo}`,
       label: result.rarity.label,
       accent: result.rarity.color,
       placeholderDuration: this.manifest.placeholderDurations.drop,
       caption: result.item.name,
-    });
+    };
   }
 
   private showResult(result: DrawResult): void {
