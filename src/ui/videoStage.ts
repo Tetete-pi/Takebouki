@@ -70,7 +70,16 @@ export class VideoStage {
       this.resolveCurrent = resolve;
       this.skipButton.hidden = false;
 
+      // 直前クリップの動画がそのまま残ると、再生が終わった動画要素に対して
+      // モバイルブラウザが大きな再生/リプレイボタンを重ねて表示してしまう。
+      // 新クリップのロード中は動画要素を隠し、暗転カバー（canvas）を挟むことで
+      // ネイティブの再生UIが露出しないようにする。動画は実際に再生が始まる
+      // （canplay）まで表示しない。
+      this.video.classList.remove("is-active");
+      this.showCover();
+
       let settled = false;
+      let starting = false;
       const usePlaceholder = () => {
         if (settled) return;
         settled = true;
@@ -81,11 +90,19 @@ export class VideoStage {
       const onEnded = () => this.finish();
       const onError = () => usePlaceholder();
       const onCanPlay = () => {
-        if (settled) return;
-        settled = true;
-        this.canvas.classList.remove("is-active");
-        this.video.classList.add("is-active");
-        void this.video.play().catch(() => usePlaceholder());
+        if (settled || starting) return;
+        starting = true;
+        // 実際に再生が始まってから動画を表示する。play() が拒否された場合
+        // （自動再生ブロック等）は動画を出さずプレースホルダへフォールバック
+        // するので、一時停止状態の動画（＝ネイティブ再生ボタン）が露出しない。
+        Promise.resolve(this.video.play())
+          .then(() => {
+            if (settled) return;
+            settled = true;
+            this.canvas.classList.remove("is-active");
+            this.video.classList.add("is-active");
+          })
+          .catch(() => usePlaceholder());
       };
 
       this.video.onended = onEnded;
@@ -128,6 +145,24 @@ export class VideoStage {
     this.badge.hidden = !show;
   }
 
+  /** クリップ切り替え中の暗転カバー（ネイティブ動画UIの露出を防ぐ）。 */
+  private showCover(): void {
+    const ctx = this.canvas.getContext("2d");
+    if (ctx) this.fillBackground(ctx);
+    this.canvas.classList.add("is-active");
+  }
+
+  /** canvas の背景（暗いグラデーション）を塗る。 */
+  private fillBackground(ctx: CanvasRenderingContext2D): void {
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+    const bg = ctx.createLinearGradient(0, 0, 0, h);
+    bg.addColorStop(0, "#0b0e17");
+    bg.addColorStop(1, "#141a2b");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+  }
+
   private finish(): void {
     this.stopPlaceholder();
     this.skipButton.hidden = true;
@@ -139,6 +174,9 @@ export class VideoStage {
     } catch {
       /* noop */
     }
+    // 再生を終えた動画要素を表示したままにすると、ネイティブのリプレイボタンが
+    // 出てしまう。クリップ終了時は必ず動画を隠す。
+    this.video.classList.remove("is-active");
     const resolve = this.resolveCurrent;
     this.resolveCurrent = null;
     resolve?.();
@@ -174,11 +212,7 @@ export class VideoStage {
     const h = this.canvas.height;
 
     // 背景グラデーション
-    const bg = ctx.createLinearGradient(0, 0, 0, h);
-    bg.addColorStop(0, "#0b0e17");
-    bg.addColorStop(1, "#141a2b");
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, w, h);
+    this.fillBackground(ctx);
 
     const cx = w / 2;
     const cy = h / 2;
@@ -251,11 +285,7 @@ export class VideoStage {
     this.canvas.classList.add("is-active");
     const w = this.canvas.width;
     const h = this.canvas.height;
-    const bg = ctx.createLinearGradient(0, 0, 0, h);
-    bg.addColorStop(0, "#0b0e17");
-    bg.addColorStop(1, "#141a2b");
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, w, h);
+    this.fillBackground(ctx);
     ctx.fillStyle = hexToRgba("#ffffff", 0.25);
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
