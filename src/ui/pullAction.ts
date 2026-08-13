@@ -18,7 +18,7 @@ export interface PullAction {
 }
 
 /** 既定実装: ボタンを押して引く。 */
-export function createButtonPullAction(label = "ガチャを引く"): PullAction {
+export function createButtonPullAction(label = "3分間教育を開始する"): PullAction {
   const button = document.createElement("button");
   button.className = "pull-button";
   button.type = "button";
