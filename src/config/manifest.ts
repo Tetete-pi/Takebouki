@@ -20,9 +20,11 @@ export const manifest: GachaManifest = {
   videoBasePath: "assets/videos",
 
   // 演出動画は2種類のみ
+  // ※ 当たり演出は暫定的に通常演出と同じ動画を使用中。
+  //    本番の当たり演出動画が用意できたら hit を "staging_hit.mp4" に戻す。
   staging: {
     normal: "staging_normal.mp4",
-    hit: "staging_hit.mp4",
+    hit: "staging_normal.mp4",
   },
 
   // レア度: どのレア度が「当たり演出」になるかを staging で指定
