@@ -6,6 +6,8 @@
  * 自動フォールバックするので、実アセットが無くても全フローを確認できる。
  */
 
+import { resolveAssetUrl } from "../core/assets";
+
 export interface ClipOptions {
   /** 動画ファイルのURL（存在しなければプレースホルダにフォールバック） */
   src: string;
@@ -299,16 +301,6 @@ export class VideoStage {
     this.rafId = 0;
     this.placeholderTimer = 0;
   }
-}
-
-/**
- * アセットURLの差し替え。
- * `window.__ASSET_MAP__`（{ 元のパス: 差し替え先URL }）があれば適用する。
- * 単一HTMLプレビューでの data URI 埋め込みや、CDN配信への切り替えに使える。
- */
-function resolveAssetUrl(src: string): string {
-  const map = (globalThis as { __ASSET_MAP__?: Record<string, string> }).__ASSET_MAP__;
-  return (map && map[src]) || src;
 }
 
 function hexToRgba(hex: string, alpha: number): string {

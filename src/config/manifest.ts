@@ -19,6 +19,9 @@ export const manifest: GachaManifest = {
   title: "Takebouki Gacha",
   videoBasePath: "assets/videos",
 
+  // BGM: 開始ボタン押下時に再生開始（ループなし）
+  bgm: "assets/audio/bgm.mp3",
+
   // 演出動画は2種類のみ
   // ※ 当たり演出は暫定的に通常演出と同じ動画を使用中。
   //    本番の当たり演出動画が用意できたら hit を "staging_hit.mp4" に戻す。

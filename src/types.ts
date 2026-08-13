@@ -59,6 +59,8 @@ export interface GachaManifest {
   title: string;
   /** 動画配置のベースパス（末尾スラッシュなし） */
   videoBasePath: string;
+  /** BGM のファイルパス（未指定なら BGM なし）。ボタン押下時に再生開始・ループなし。 */
+  bgm?: string;
   /** 演出動画（通常/当たり） */
   staging: StagingConfig;
   /** レア度定義 */

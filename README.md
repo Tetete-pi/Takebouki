@@ -45,14 +45,17 @@ npm run preview  # ビルド結果のプレビュー
 [`public/assets/videos/README.md`](public/assets/videos/README.md) を参照。
 
 ```
-public/assets/videos/
-├── staging/            # 演出動画（2種類）
-│   ├── staging_normal.mp4
-│   └── staging_hit.mp4
-└── drops/              # 排出動画（ラインナップの数だけ）
-    ├── n_01.mp4
-    ├── ...
-    └── ssr_01.mp4
+public/assets/
+├── videos/
+│   ├── staging/            # 演出動画（2種類）
+│   │   ├── staging_normal.mp4
+│   │   └── staging_hit.mp4
+│   └── drops/              # 排出動画（ラインナップの数だけ）
+│       ├── takebouki.mp4
+│       ├── ...
+│       └── takeishou.mp4
+└── audio/
+    └── bgm.mp3             # BGM（開始ボタン押下で再生・ループなし / manifest.bgm）
 ```
 
 ファイル名を `manifest.ts` と一致させれば、プレースホルダから実動画へ自動で

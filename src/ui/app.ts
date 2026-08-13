@@ -5,6 +5,7 @@ import { createButtonPullAction, type PullAction } from "./pullAction";
 import { VideoStage } from "./videoStage";
 import { createResultView } from "./resultView";
 import { createStatsPanel } from "./statsPanel";
+import { BgmPlayer } from "./bgm";
 
 /** 画面フローの状態。 */
 type Phase = "idle" | "staging" | "dropping" | "result";
@@ -39,6 +40,9 @@ export class GachaApp {
   /** 待機画面の「引く」ボタン用コンテナ（演出中は隠す） */
   private controls: HTMLElement | null = null;
 
+  /** BGM（ボタン押下時に再生開始・ループなし）。manifest.bgm 未指定なら null。 */
+  private bgm: BgmPlayer | null = null;
+
   private phase: Phase = "idle";
 
   constructor(options: AppOptions) {
@@ -56,6 +60,7 @@ export class GachaApp {
 
     this.stage = new VideoStage();
     this.pullAction = (options.pullActionFactory ?? (() => createButtonPullAction()))();
+    this.bgm = this.manifest.bgm ? new BgmPlayer(this.manifest.bgm) : null;
 
     this.element = this.render();
 
@@ -108,6 +113,8 @@ export class GachaApp {
 
   private async runPull(): Promise<void> {
     if (this.phase !== "idle") return;
+    // BGM をこの場（ユーザー操作の実行スタック）で再生開始する。ループなし。
+    this.bgm?.start();
     this.pullAction.setEnabled(false);
     if (this.controls) this.controls.hidden = true;
     this.resultView.hide();
