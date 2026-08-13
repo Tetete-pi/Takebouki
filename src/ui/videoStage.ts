@@ -92,8 +92,8 @@ export class VideoStage {
       this.video.onerror = onError;
       this.video.oncanplay = onCanPlay;
 
-      // src を設定してロード開始
-      this.video.src = opts.src;
+      // src を設定してロード開始（アセットURLの差し替えがあれば適用）
+      this.video.src = resolveAssetUrl(opts.src);
       this.video.load();
 
       // ロードが一定時間で進まない場合もプレースホルダへ
@@ -269,6 +269,16 @@ export class VideoStage {
     this.rafId = 0;
     this.placeholderTimer = 0;
   }
+}
+
+/**
+ * アセットURLの差し替え。
+ * `window.__ASSET_MAP__`（{ 元のパス: 差し替え先URL }）があれば適用する。
+ * 単一HTMLプレビューでの data URI 埋め込みや、CDN配信への切り替えに使える。
+ */
+function resolveAssetUrl(src: string): string {
+  const map = (globalThis as { __ASSET_MAP__?: Record<string, string> }).__ASSET_MAP__;
+  return (map && map[src]) || src;
 }
 
 function hexToRgba(hex: string, alpha: number): string {
