@@ -98,6 +98,7 @@ export class VideoStage {
     if (clips.length === 0) return;
     this.stopPlaceholder();
     this.showBadge(false);
+    // スキップは最初のクリップ（演出）中のみ表示する。
     this.skipButton.hidden = false;
 
     // クリップ0: 表バッファに読み込み、暗転カバーを出しつつ再生開始
@@ -115,6 +116,8 @@ export class VideoStage {
       await playPromise;
 
       if (next) {
+        // 2つ目以降（排出）に切り替わったらスキップは不可にする（演出中のみ押せる）。
+        this.skipButton.hidden = true;
         // シームレス切り替え: 裏（プリロード済み）を表にして即再生。
         // 旧表は次クリップが表示された時点（reveal）で隠す。
         this.front = 1 - this.front;
