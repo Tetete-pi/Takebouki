@@ -37,7 +37,10 @@ export class VideoStage {
     this.video = document.createElement("video");
     this.video.className = "stage__video";
     this.video.playsInline = true;
-    this.video.muted = true; // 自動再生の制約回避（音声が必要なら後述の note 参照）
+    // 音ありで再生する。最初のクリップの play() をユーザー操作と同じ実行スタックで
+    // 呼ぶことで音付き再生の許可を得る（同一 video 要素を使い回すので以降も維持される）。
+    // 万一 音付き再生が拒否された場合はミュートで再試行する（下記 play() 参照）。
+    this.video.muted = false;
     this.video.preload = "auto";
 
     this.canvas = document.createElement("canvas");
@@ -79,39 +82,43 @@ export class VideoStage {
       this.showCover();
 
       let settled = false;
-      let starting = false;
       const usePlaceholder = () => {
         if (settled) return;
         settled = true;
         this.runPlaceholder(opts);
       };
-
-      // 動画側のイベント
-      const onEnded = () => this.finish();
-      const onError = () => usePlaceholder();
-      const onCanPlay = () => {
-        if (settled || starting) return;
-        starting = true;
-        // 実際に再生が始まってから動画を表示する。play() が拒否された場合
-        // （自動再生ブロック等）は動画を出さずプレースホルダへフォールバック
-        // するので、一時停止状態の動画（＝ネイティブ再生ボタン）が露出しない。
-        Promise.resolve(this.video.play())
-          .then(() => {
-            if (settled) return;
-            settled = true;
-            this.canvas.classList.remove("is-active");
-            this.video.classList.add("is-active");
-          })
-          .catch(() => usePlaceholder());
+      // 実際に再生が始まってから動画を表示する。これにより、一時停止/終了状態の
+      // 動画（＝ネイティブ再生ボタン）が露出しない。
+      const reveal = () => {
+        if (settled) return;
+        settled = true;
+        this.canvas.classList.remove("is-active");
+        this.video.classList.add("is-active");
       };
 
-      this.video.onended = onEnded;
-      this.video.onerror = onError;
-      this.video.oncanplay = onCanPlay;
+      this.video.onended = () => this.finish();
+      this.video.onerror = () => usePlaceholder();
+      this.video.oncanplay = null;
 
       // src を設定してロード開始（アセットURLの差し替えがあれば適用）
+      this.video.muted = false;
       this.video.src = resolveAssetUrl(opts.src);
       this.video.load();
+
+      // 再生をこの場で開始する。最初のクリップはユーザー操作（タップ）と同じ
+      // 実行スタックから呼ばれるため、音付き再生が許可される。音付きが拒否された
+      // 場合はミュートで再試行し（動画は出す）、それでも駄目ならプレースホルダへ。
+      Promise.resolve(this.video.play())
+        .then(reveal)
+        .catch(() => {
+          if (settled) return;
+          if (!this.video.muted) {
+            this.video.muted = true;
+            Promise.resolve(this.video.play()).then(reveal).catch(() => usePlaceholder());
+          } else {
+            usePlaceholder();
+          }
+        });
 
       // ロードが一定時間で進まない場合もプレースホルダへ
       window.setTimeout(() => {
