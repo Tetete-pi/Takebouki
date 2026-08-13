@@ -34,14 +34,13 @@ export const manifest: GachaManifest = {
   ],
 
   // ラインナップ（= 排出動画の本数分だけ定義する）
+  // レア度は暫定。weight が大きいほど出やすい。
   items: [
-    { id: "n_01", name: "ブロンズソード", rarityId: "n", weight: 500, dropVideo: "n_01.mp4" },
-    { id: "n_02", name: "レザーアーマー", rarityId: "n", weight: 500, dropVideo: "n_02.mp4" },
-    { id: "r_01", name: "シルバーランス", rarityId: "r", weight: 150, dropVideo: "r_01.mp4" },
-    { id: "r_02", name: "ミスリルシールド", rarityId: "r", weight: 150, dropVideo: "r_02.mp4" },
-    { id: "sr_01", name: "炎竜の大剣", rarityId: "sr", weight: 45, dropVideo: "sr_01.mp4" },
-    { id: "sr_02", name: "氷結の魔杖", rarityId: "sr", weight: 45, dropVideo: "sr_02.mp4" },
-    { id: "ssr_01", name: "星辰のエクスカリバー", rarityId: "ssr", weight: 10, dropVideo: "ssr_01.mp4" },
+    { id: "takebouki", name: "竹ボウキ", rarityId: "n", weight: 500, dropVideo: "takebouki.mp4" },
+    { id: "taketombo", name: "竹とんぼ", rarityId: "n", weight: 500, dropVideo: "taketombo.mp4" },
+    { id: "takenoko", name: "タケノコ", rarityId: "r", weight: 150, dropVideo: "takenoko.mp4" },
+    { id: "takecopter", name: "タケコプター", rarityId: "sr", weight: 45, dropVideo: "takecopter.mp4" },
+    { id: "takeishou", name: "武井壮", rarityId: "ssr", weight: 10, dropVideo: "takeishou.mp4" },
   ],
 
   // 実mp4が無いときのプレースホルダ演出の尺（秒）
