@@ -1,12 +1,12 @@
-import type { DrawResult } from "../types";
-
 /**
- * 排出結果の表示。アイテム名・レア度バッジ・演出種別を出し、
- * 「もう一度引く」ボタンで次の抽選に戻す。
+ * 排出後の表示。
+ *
+ * アイテム名・レア度は排出動画自体に含まれるため、ここでは「もう一度引く」
+ * ボタンだけを表示する（動画の最終フレームの上に重ねる）。
  */
 export interface ResultView {
   readonly element: HTMLElement;
-  show(result: DrawResult): void;
+  show(): void;
   hide(): void;
   onAgain(callback: () => void): void;
 }
@@ -16,34 +16,19 @@ export function createResultView(): ResultView {
   root.className = "result";
   root.hidden = true;
 
-  const badge = document.createElement("div");
-  badge.className = "result__rarity";
-
-  const name = document.createElement("div");
-  name.className = "result__name";
-
-  const staging = document.createElement("div");
-  staging.className = "result__staging";
-
   const again = document.createElement("button");
   again.type = "button";
   again.className = "result__again";
   again.textContent = "もう一度引く";
 
-  root.append(badge, name, staging, again);
+  root.append(again);
 
   let callback: (() => void) | null = null;
   again.addEventListener("click", () => callback?.());
 
   return {
     element: root,
-    show(result) {
-      badge.textContent = result.rarity.label;
-      badge.style.setProperty("--accent", result.rarity.color);
-      name.textContent = result.item.name;
-      staging.textContent =
-        result.staging === "hit" ? "★ 当たり演出" : "通常演出";
-      staging.dataset.staging = result.staging;
+    show() {
       root.hidden = false;
       // 再アニメーション用にクラスを付け直す
       root.classList.remove("is-in");

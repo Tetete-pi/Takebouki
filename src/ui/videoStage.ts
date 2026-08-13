@@ -117,19 +117,48 @@ export class VideoStage {
         onClipStart?.(i + 1);
         playPromise = this.beginClip(this.videos[this.front], next, false);
       } else {
-        // 最終クリップ終了: 動画を隠す（ネイティブ再生ボタンの露出防止）
-        this.videos[this.front].classList.remove("is-active");
+        // 最終クリップ（排出）終了: 最後のフレームを canvas に焼き付けて残す。
+        // 排出動画にアイテム名・レア度が写っているため、その最終フレームを表示し続ける。
+        // 動画要素は隠す（ネイティブ再生ボタンの露出防止）。
+        this.freezeCurrentFrame();
       }
     }
 
     this.skipButton.hidden = true;
   }
 
-  /** 結果表示用のバッジ（レア度など）を出す。 */
-  showResultBadge(text: string, accent: string): void {
-    this.badge.textContent = text;
-    this.badge.style.setProperty("--accent", accent);
-    this.showBadge(true);
+  /** 現在再生中（＝最終フレーム）の映像を canvas に焼き付けて残す。 */
+  private freezeCurrentFrame(): void {
+    const video = this.videos[this.front];
+    const ctx = this.canvas.getContext("2d");
+    if (ctx) {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        this.drawVideoCover(ctx, video);
+      } else {
+        // 映像が取得できない場合（プレースホルダ経由など）は暗い背景
+        this.fillBackground(ctx);
+      }
+    }
+    this.canvas.classList.add("is-active");
+    this.videos[0].classList.remove("is-active");
+    this.videos[1].classList.remove("is-active");
+  }
+
+  /** video を canvas 全面に object-fit: cover 相当で描画する。 */
+  private drawVideoCover(ctx: CanvasRenderingContext2D, video: HTMLVideoElement): void {
+    const cw = this.canvas.width;
+    const ch = this.canvas.height;
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    const scale = Math.max(cw / vw, ch / vh);
+    const dw = vw * scale;
+    const dh = vh * scale;
+    ctx.clearRect(0, 0, cw, ch);
+    try {
+      ctx.drawImage(video, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+    } catch {
+      this.fillBackground(ctx);
+    }
   }
 
   /** ステージを初期状態（待機）に戻す。 */

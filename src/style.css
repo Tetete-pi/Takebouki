@@ -180,58 +180,33 @@ body {
 }
 
 /* ---- result overlay ----------------------------------------------------- */
+/* 排出動画にアイテム名・レア度が含まれるため、結果表示は「もう一度引く」ボタンのみ。
+   動画の最終フレームを隠さないよう背景は透明で、ボタンは下部に配置する。 */
 .result {
   position: absolute;
   inset: 0;
   z-index: 4;
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  gap: 14px;
-  padding: 24px;
-  text-align: center;
-  background: radial-gradient(
-    circle at 50% 40%,
-    rgba(0, 0, 0, 0.35),
-    rgba(0, 0, 0, 0.82)
-  );
+  padding: 28px 24px;
+  pointer-events: none; /* 背景（動画）を隠さない。ボタンだけ操作可能に */
 }
-.result.is-in .result__rarity {
-  animation: pop 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) both;
-}
-.result.is-in .result__name {
-  animation: fadeup 0.5s ease 0.12s both;
-}
-.result__rarity {
-  font-size: 44px;
-  font-weight: 900;
-  letter-spacing: 0.1em;
-  color: var(--accent, #fff);
-  text-shadow: 0 0 24px var(--accent, #fff);
-}
-.result__name {
-  font-size: 24px;
-  font-weight: 700;
-}
-.result__staging {
-  font-size: 13px;
-  color: var(--muted);
-  letter-spacing: 0.1em;
-}
-.result__staging[data-staging="hit"] {
-  color: #ffcc33;
+.result.is-in .result__again {
+  animation: fadeup 0.4s ease both;
 }
 .result__again {
-  margin-top: 8px;
-  padding: 12px 26px;
+  pointer-events: auto;
+  padding: 14px 34px;
   border: 0;
   border-radius: 999px;
   background: linear-gradient(180deg, #ffffff, #d6def0);
   color: #10131f;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 .result__again:hover {
   filter: brightness(1.05);

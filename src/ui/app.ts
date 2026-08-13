@@ -160,8 +160,8 @@ export class GachaApp {
 
   private showResult(result: DrawResult): void {
     this.phase = "result";
-    this.stage.showResultBadge(result.rarity.label, result.rarity.color);
-    this.resultView.show(result);
+    // アイテム名・レア度は排出動画に含まれるため、ここでは「もう一度引く」だけ表示。
+    this.resultView.show();
     this.stats.record(result);
     this.obtained.add(result.item.id);
     this.updateCompletion();
