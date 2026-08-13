@@ -285,19 +285,12 @@ export class VideoStage {
     ctx.fillRect(cx - 200, h - 70, 400 * t, 8);
   }
 
-  /** 待機中の静止画。 */
+  /** 待機中の静止画（暗い背景のみ。中央には「引く」ボタンをオーバーレイ表示）。 */
   private drawIdle(): void {
     const ctx = this.canvas.getContext("2d");
     if (!ctx) return;
     this.canvas.classList.add("is-active");
-    const w = this.canvas.width;
-    const h = this.canvas.height;
     this.fillBackground(ctx);
-    ctx.fillStyle = hexToRgba("#ffffff", 0.25);
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = "600 40px system-ui, sans-serif";
-    ctx.fillText("READY", w / 2, h / 2);
   }
 
   private stopPlaceholder(): void {

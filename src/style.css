@@ -234,10 +234,15 @@ body {
 }
 
 /* ---- controls (pull action) -------------------------------------------- */
+/* 待機画面: ステージ中央にオーバーレイ表示 */
 .app__controls {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
   display: flex;
+  align-items: center;
   justify-content: center;
-  margin-top: 22px;
+  padding: 24px;
 }
 .pull-button {
   position: relative;

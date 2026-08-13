@@ -36,6 +36,9 @@ export class GachaApp {
   /** これまでに入手したアイテムID（同一セッション内で累積、リロードでリセット） */
   private readonly obtained = new Set<string>();
 
+  /** 待機画面の「引く」ボタン用コンテナ（演出中は隠す） */
+  private controls: HTMLElement | null = null;
+
   private phase: Phase = "idle";
 
   constructor(options: AppOptions) {
@@ -77,16 +80,19 @@ export class GachaApp {
 
     this.completionEl.className = "completion";
 
-    const stageWrap = document.createElement("div");
-    stageWrap.className = "app__stage";
-    // コンプリート表示はステージ右上に常時表示（結果表示の上にも出るよう最後に追加）
-    stageWrap.append(this.stage.element, this.resultView.element, this.completionEl);
-
+    // 「引く」ボタンは待機画面としてステージ中央にオーバーレイ表示する。
+    // 演出/排出中と結果表示中は隠す（toIdle / runPull で制御）。
     const controls = document.createElement("div");
     controls.className = "app__controls";
     controls.append(this.pullAction.element);
+    this.controls = controls;
 
-    root.append(header, stageWrap, controls, this.stats.element);
+    const stageWrap = document.createElement("div");
+    stageWrap.className = "app__stage";
+    // コンプリート表示はステージ右上に常時表示（結果表示の上にも出るよう最後に追加）
+    stageWrap.append(this.stage.element, controls, this.resultView.element, this.completionEl);
+
+    root.append(header, stageWrap, this.stats.element);
     return root;
   }
 
@@ -97,11 +103,13 @@ export class GachaApp {
     this.resultView.hide();
     this.stage.reset();
     this.pullAction.setEnabled(true);
+    if (this.controls) this.controls.hidden = false;
   }
 
   private async runPull(): Promise<void> {
     if (this.phase !== "idle") return;
     this.pullAction.setEnabled(false);
+    if (this.controls) this.controls.hidden = true;
     this.resultView.hide();
 
     const result = drawOnce(this.manifest, this.rng);
