@@ -45,8 +45,51 @@ body {
 
 /* ---- header ------------------------------------------------------------- */
 .app__header {
+  position: relative;
   text-align: center;
   margin-bottom: 16px;
+}
+
+/* コンプリート表示: ステージ右上のHUDピル（同一セッション内で入手した種類数 / 全種類数） */
+.completion {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(4px);
+  line-height: 1;
+  pointer-events: none;
+}
+.completion__label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+.completion__value {
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.completion__slash {
+  margin: 0 1px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.completion.is-complete {
+  border-color: rgba(255, 204, 51, 0.6);
+  box-shadow: 0 0 16px rgba(255, 204, 51, 0.35);
+}
+.completion.is-complete .completion__value {
+  color: #ffcc33;
+  text-shadow: 0 0 12px rgba(255, 204, 51, 0.6);
 }
 .app__title {
   margin: 0;

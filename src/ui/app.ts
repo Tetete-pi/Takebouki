@@ -31,6 +31,11 @@ export class GachaApp {
   private readonly resultView = createResultView();
   private readonly stats = createStatsPanel();
 
+  /** 右上のコンプリート表示（同一セッションで入手した種類数 / 全種類数） */
+  private readonly completionEl = document.createElement("div");
+  /** これまでに入手したアイテムID（同一セッション内で累積、リロードでリセット） */
+  private readonly obtained = new Set<string>();
+
   private phase: Phase = "idle";
 
   constructor(options: AppOptions) {
@@ -55,6 +60,7 @@ export class GachaApp {
     this.resultView.onAgain(() => this.toIdle());
 
     this.stats.init(this.manifest);
+    this.updateCompletion();
     this.toIdle();
   }
 
@@ -69,9 +75,12 @@ export class GachaApp {
     header.innerHTML = `<h1 class="app__title">${this.manifest.title}</h1>
       <p class="app__subtitle">単発ガチャ</p>`;
 
+    this.completionEl.className = "completion";
+
     const stageWrap = document.createElement("div");
     stageWrap.className = "app__stage";
-    stageWrap.append(this.stage.element, this.resultView.element);
+    // コンプリート表示はステージ右上に常時表示（結果表示の上にも出るよう最後に追加）
+    stageWrap.append(this.stage.element, this.resultView.element, this.completionEl);
 
     const controls = document.createElement("div");
     controls.className = "app__controls";
@@ -132,6 +141,18 @@ export class GachaApp {
     this.stage.showResultBadge(result.rarity.label, result.rarity.color);
     this.resultView.show(result);
     this.stats.record(result);
+    this.obtained.add(result.item.id);
+    this.updateCompletion();
+  }
+
+  /** 右上のコンプリート表示を更新する。 */
+  private updateCompletion(): void {
+    const total = this.manifest.items.length;
+    const got = this.obtained.size;
+    this.completionEl.innerHTML =
+      `<span class="completion__label">コンプ</span>` +
+      `<span class="completion__value">${got}<span class="completion__slash">/</span>${total}</span>`;
+    this.completionEl.classList.toggle("is-complete", got >= total && total > 0);
   }
 }
 
